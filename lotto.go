@@ -23,8 +23,11 @@ const RESULT_FILE_FORMAT = "%s-dl.txt"
 
 var RESULTS_PATHNAME, _ = filepath.Abs(filepath.Dir(os.Args[0]))
 var RESULTS_FULL_PATHNAME = RESULTS_PATHNAME + "/results"
-var RESULT_FORMAT_RE = regexp.MustCompile(`^(?P<seqNo>\d+)\. (?P<day>\d+)\.(?P<month>\d+)\.(?P<year>\d+)\ (?P<n0>\d+)\,(?P<n1>\d+)\,(?P<n2>\d+)\,(?P<n3>\d+)\,(?P<n4>\d+)\,(?P<n5>\d+)$`)
-var CURRENT_LOCATION = time.Now().Location()
+
+var RESULT_FORMAT_RE = regexp.MustCompile(
+	`^(?P<seqNo>\d+)\. (?P<day>\d+)\.(?P<month>\d+)\.(?P<year>\d+)\ (?P<n0>\d+)\,(?P<n1>\d+)\,(?P<n2>\d+)\,(?P<n3>\d+)\,(?P<n4>\d+)\,(?P<n5>\d+)$`,
+)
+var CURRENT_LOCATION_TS = time.Now().Location()
 
 type ResultEntry struct {
 	seqNo    int
@@ -37,7 +40,10 @@ func downloadLastResultsFile() string {
 	formattedTime := fmt.Sprintf("%d-%02d-%02d",
 		now.Year(), now.Month(), now.Day())
 
-	latestResultPathname := RESULTS_FULL_PATHNAME + "/" + fmt.Sprintf(RESULT_FILE_FORMAT, formattedTime)
+	latestResultPathname := RESULTS_FULL_PATHNAME + "/" + fmt.Sprintf(
+		RESULT_FILE_FORMAT,
+		formattedTime,
+	)
 
 	log.Println("Looking for", latestResultPathname)
 
@@ -55,7 +61,12 @@ func downloadLastResultsFile() string {
 		return latestResultPathname
 	}
 
-	log.Println("Latest file with results does not exists, downloading", REPO_URL, "to", latestResultPathname)
+	log.Println(
+		"Latest file with results does not exists, downloading",
+		REPO_URL,
+		"to",
+		latestResultPathname,
+	)
 
 	response, err := http.Get(REPO_URL)
 
@@ -133,9 +144,18 @@ func parseResultsFile(pathname string) ([]ResultEntry, error) {
 		n5, _ := strconv.ParseInt(parsedLineRe["n5"], 10, 32)
 
 		entry := ResultEntry{
-			seqNo:    int(seqNo),
-			dateTime: time.Date(int(year), time.Month(month), int(day), 0, 0, 0, 0, CURRENT_LOCATION),
-			numbers:  [6]int{int(n0), int(n1), int(n2), int(n3), int(n4), int(n5)},
+			seqNo: int(seqNo),
+			dateTime: time.Date(
+				int(year),
+				time.Month(month),
+				int(day),
+				0,
+				0,
+				0,
+				0,
+				CURRENT_LOCATION_TS,
+			),
+			numbers: [6]int{int(n0), int(n1), int(n2), int(n3), int(n4), int(n5)},
 		}
 
 		parsedResults = append(parsedResults, entry)
@@ -258,7 +278,9 @@ func main() {
 	log.Println("Repo URL", REPO_URL)
 	log.Println("Saving downloaded results to", RESULTS_FULL_PATHNAME)
 
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
+		InsecureSkipVerify: true,
+	}
 
 	os.MkdirAll(RESULTS_FULL_PATHNAME, 0777)
 
@@ -277,12 +299,28 @@ func main() {
 	sortResultEntrySlice(parsed)
 
 	endDate := parsed[len(parsed)-1].dateTime
-	startDate := endDate.AddDate(0, 0, -367)
-	// startDate := endDate.AddDate(0, 0, -7)
-	// startDate := time.Now().AddDate(0, 0, -7)
+	startDate := endDate.AddDate(0, 0, -369)
 
-	startDate = time.Date(startDate.Year(), startDate.Month(), startDate.Day(), 0, 0, 0, 0, CURRENT_LOCATION)
-	endDate = time.Date(endDate.Year(), endDate.Month(), endDate.Day(), 0, 0, 0, 0, CURRENT_LOCATION)
+	startDate = time.Date(
+		startDate.Year(),
+		startDate.Month(),
+		startDate.Day(),
+		0,
+		0,
+		0,
+		0,
+		CURRENT_LOCATION_TS,
+	)
+	endDate = time.Date(
+		endDate.Year(),
+		endDate.Month(),
+		endDate.Day(),
+		0,
+		0,
+		0,
+		0,
+		CURRENT_LOCATION_TS,
+	)
 
 	log.Println("Start date", startDate)
 	log.Println("End date", endDate)
